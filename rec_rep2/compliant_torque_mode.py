@@ -18,15 +18,13 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from .friction_observer import FrictionObserver
+from .kortex_connection import FAKE_HARDWARE
+from .kortex_connection import PASSWORD as _PASSWORD
+from .kortex_connection import ROBOT_IP as _ROBOT_IP
+from .kortex_connection import ROBOT_PORT as _ROBOT_PORT
+from .kortex_connection import ROBOT_PORT_RT as _ROBOT_PORT_RT
+from .kortex_connection import USERNAME as _USERNAME
 from .safety_monitor import SafetyMonitor
-
-FAKE_HARDWARE = os.environ.get('FAKE_HARDWARE', '0').lower() in ('1', 'true', 'yes')
-
-_ROBOT_IP = os.environ.get('ROBOT_IP', '192.168.0.10')
-_ROBOT_PORT = 10000
-_ROBOT_PORT_RT = 10001   # UDP realtime port for BaseCyclic
-_USERNAME = 'admin'
-_PASSWORD = 'admin'
 
 N_JOINTS = 7
 _DEG2RAD = math.pi / 180.0
@@ -36,7 +34,6 @@ _DEG2RAD = math.pi / 180.0
 _RATED_NM = [56.0, 56.0, 56.0, 28.0, 28.0, 28.0, 28.0]
 DEFAULT_TAU_LIMITS: List[float] = [0.4 * t for t in _RATED_NM]
 
-# Velocity watchdog: ~45 deg/s (generous for hand-guiding; well below max).
 DEFAULT_VEL_LIMITS: List[float] = [0.8] * N_JOINTS
 
 if not FAKE_HARDWARE:
@@ -121,10 +118,6 @@ class CompliantTorqueMode:
         """
         Construct a CompliantTorqueMode.
 
-        Parameters
-        ----------
-        node   : rclpy Node — used for logging and robot_description param
-        params : dict of configuration values (see compliant_params.yaml)
         """
         self._node = node
         self._log = node.get_logger()
@@ -164,7 +157,7 @@ class CompliantTorqueMode:
             self._log.info('[FAKE] CompliantTorqueMode: skipping robot connections.')
             return
 
-        # TCP connection — used for mode-switching (BaseClient, ActuatorConfigClient)
+        # TCP connection
         self._tcp_transport = TCPTransport()
         self._tcp_transport.connect(_ROBOT_IP, _ROBOT_PORT)
         self._tcp_router = RouterClient(self._tcp_transport, lambda x: None)

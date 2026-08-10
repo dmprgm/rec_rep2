@@ -3,7 +3,7 @@ import sys
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
-from classic_bags import Bag
+from .trajectory_io import load_waypoints
 
 # This topic is consumed by the joint_trajectory_controller.
 # Verify with: ros2 topic list | grep trajectory
@@ -31,22 +31,22 @@ class MotionReplayer(Node):
                    Speed scaling works by dividing each waypoint
                    timestamp by the speed factor.
         """
-        traj = JointTrajectory()
-        t0_ns = None
+        waypoints = load_waypoints(filepath)
+        if not waypoints:
+            self.get_logger().error('Empty bag. There is nothing to replay!')
+            return
 
-        with Bag(filepath) as bag:
-            for _, msg, ts in bag.read_messages('/joint_states'):
-                if t0_ns is None:
-                    t0_ns = int(ts)
-                    traj.joint_names = list(msg.name)
-                t = (int(ts) - t0_ns) / (speed * 1e9)
-                pt = JointTrajectoryPoint()
-                pt.positions = list(msg.position)
-                pt.time_from_start = Duration(
-                    sec=int(t),
-                    nanosec=int((t - int(t)) * 1_000_000_000),
-                )
-                traj.points.append(pt)
+        traj = JointTrajectory()
+        traj.joint_names = list(waypoints[0][1].name)
+        for t_elapsed, msg in waypoints:
+            t = t_elapsed / speed
+            pt = JointTrajectoryPoint()
+            pt.positions = list(msg.position)
+            pt.time_from_start = Duration(
+                sec=int(t),
+                nanosec=int((t - int(t)) * 1_000_000_000),
+            )
+            traj.points.append(pt)
 
         self.get_logger().info(
             f'Publishing {len(traj.points)} waypoints '

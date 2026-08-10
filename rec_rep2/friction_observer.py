@@ -43,7 +43,6 @@ import numpy as np
 
 
 class FrictionObserver:
-    """Per-joint model-free friction observer (rigid-joint formulation)."""
 
     def __init__(
         self,
@@ -56,7 +55,7 @@ class FrictionObserver:
 
         Parameters
         ----------
-        n_joints : number of joints (default 7 for Gen3)
+        n_joints : number of joints
         L        : dynamic observer gains, length n_joints (rad/s)
         Lp       : static proportional gains, length n_joints (rad/s)
         """

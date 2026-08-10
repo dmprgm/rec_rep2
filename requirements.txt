@@ -1,0 +1,17 @@
+# Non-ROS Python dependencies for rec_rep2.
+#
+# On the target ROS2 Jazzy machine, numpy and pinocchio are pulled in as
+# rosdep dependencies declared in package.xml (python3-numpy, pinocchio) --
+# `rosdep install --from-paths src --ignore-src -r -y` handles them.
+# They're listed here too so friction_observer.py / safety_monitor.py can be
+# unit-tested in a plain Python environment with no ROS install at all
+# (see test/test_friction_observer.py, test/test_safety_monitor.py).
+#
+# Install with: pip install -r requirements.txt
+
+numpy
+pin          # Pinocchio Python bindings, PyPI package name is "pin"
+pytest
+
+# kortex_api isa vendor wheel you must download and install by hand. In 
+# readme.md I added a section "External driver stack" for the exact steps.

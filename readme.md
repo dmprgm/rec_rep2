@@ -1,17 +1,63 @@
-## recorder.py
+# RecRep2: Compliant Motion Recording and Replay for a Kinova Gen3 Robotic Arm
+This was made for the Humble ROS2 distro and now must be converted to the Jazzy ROS2 distro.
 
+## External driver stack
+rec_rep2 itself only talks to the Gen3 through `/joint_states` and
+`joint_trajectory_controller`. To get a (real or fake) robot onto those
+topics, you need to bring up Kinova's driver stack first. Bootstrap a fresh
+workspace like this:
+
+    cd ~/ros2_ws
+    vcs import src < src/rec_rep2/rec_rep2.repos   # optional, see below
+    rosdep install --from-paths src --ignore-src -r -y
+    pip install -r src/rec_rep2/requirements.txt
+    colcon build
+
+Dependency breakdown:
+
+- **kortex_bringup / kortex_description** (the Gen3 driver + URDF/meshes, from [Kinovarobotics/ros2_kortex](https://github.com/Kinovarobotics/ros2_kortex)) are released as Jazzy binaries
+    - `rosdep install` should be all you need
+    - both are declared in `package.xml`. 
+    - `rec_rep2.repos` + `vcs import` is only needed if building ros2_kortex from source instead
+- **pinocchio** and **python3-numpy** are declared in `package.xml` and
+  installed the same way via rosdep. They're also listed in `requirements.txt` so `friction_observer.py` / `safety_monitor.py` can be unit-tested with plain `pytest` outside a
+  ROS install entirely
+- **kortex_api** (Kinova's Python gRPC SDK, imported directly by
+  `compliant_mode.py` / `compliant_torque_mode.py`) is not a ROS package and not on PyPI, so neither rosdep nor `requirements.txt` can install it.
+  Download the wheel matching Your Python version from the
+  [Kinova Kortex API Artifactory](https://artifactory.kinovaapps.com/ui/repos/tree/General/generic-public/kortex/API)
+  (see [python_quick_start.md](https://github.com/Kinovarobotics/kortex/blob/master/linked_md/python_quick_start.md)
+  in `Kinovarobotics/kortex` for the current version) and install it by hand:
+
+      pip install kortex_api-<version>-py3-none-any.whl
+
+  Needed before running anything that imports `compliant_mode` or
+  `compliant_torque_mode` without `FAKE_HARDWARE=1`.
+
+## compliant_mode.py vs compliant_torque_mode.py
+These are mutually exclusive! 
+- Compliant_mode.py is the SAFE and FRIENDLY version that uses the official API. 
+- Compliant_torque_mode.py is an experimental alternative, from-scratch compliant controller that is not guaranteed to work Yet.
+
+Neither have worked 100% yet AFAIK. Compliant_mode.py = jerky and unsatisfactory compliance; Compliant_torque_mode.py is untested.
+Supposed to be determined by set_posing_mode but I can't see through the spagheti code
+
+Below are WIP moving the lengthy notes/documentation from each file to a consolidated reference readme.
+## recorder.py
+WIP
 
 ## replayer.py
 ### MotionReplayer class
-Reads a JSON trajectory produced by MotionRecorder and
-    publishes it to the joint_trajectory_controller.
+Reads a rosbag2 trajectory bag produced by MotionRecorder (via
+    trajectory_io.load_waypoints) and publishes it to the
+    joint_trajectory_controller.
 
     The controller accepts trajectory_msgs/JointTrajectory
     over a topic or via the FollowJointTrajectory action.
     We use the simpler topic interface here.
 
     Reference:
-      control.ros.org/humble/doc/ros2_controllers/
+      control.ros.org/jazzy/doc/ros2_controllers/
         joint_trajectory_controller/doc/userdoc.html
 
 ## compliant_torque_mode.py

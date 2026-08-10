@@ -1,18 +1,11 @@
+# OLD!
 # Kortex API servoing mode constants
 # Reference: Kinova-kortex2_Gen3_G3L/linked_md/python_servoing_modes.md
 # SINGLE_LEVEL_SERVOING = 1   # Default! high-level control at 40 Hz (re kinova manual)
 # ADMITTANCE_MODE       = 2   # Per-joint gravity compensation
 # LOW_LEVEL_SERVOING    = 3   # Direct actuator commands at 1 kHz (C++ ONLY!) DO NOT USE.
 
-import os
-
-FAKE_HARDWARE = os.environ.get('FAKE_HARDWARE', '0').lower() in ('1', 'true', 'yes')
-
-# Default credentials for Kinova Gen3
-ROBOT_IP = os.environ.get('ROBOT_IP', '192.168.0.10')  # default NOT .1.10
-ROBOT_PORT = 10000
-USERNAME = 'admin'
-PASSWORD = 'admin'
+from .kortex_connection import FAKE_HARDWARE, PASSWORD, ROBOT_IP, ROBOT_PORT, USERNAME
 
 if not FAKE_HARDWARE:
     from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient

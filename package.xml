@@ -22,16 +22,42 @@
   <!-- Trigger service for start/stop recording -->
   <depend>std_srvs</depend>
 
-  <!-- ROS bag reading/writing via classic_bags -->
-  <depend>classic_bags</depend>
+  <!-- ROS bag reading/writing for recorded trajectories -->
   <depend>rosbag2_py</depend>
   
   <!-- FollowJointTrajectory action for replay -->
   <depend>control_msgs</depend>
-  
-  <!--Kinova driver: services and message types -->
-  <!-- <depend>kortex_driver</depend>
-   -->
+
+  <!-- numpy: friction_observer.py, safety_monitor.py, compliant_torque_mode.py -->
+  <depend>python3-numpy</depend>
+
+  <!-- Pinocchio: gravity compensation in compliant_torque_mode.py. 
+       Released for Jazzy as ros-jazzy-pinocchio. -->
+  <depend>pinocchio</depend>
+
+  <!-- launch/launch_ros: rec_rep2's own launch files, and package-share
+       resolution (ament_index_python) used by gui.py and
+       compliant_torque_mode.py's xacro fallback. -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+
+  <!-- Kinova Gen3 driver stack: brought up by rec_rep2.launch.py
+       (kortex_bringup) and used for the fake-hardware URDF/RViz path
+       (kortex_description). Both are released for Jazzy. -->
+  <exec_depend>kortex_bringup</exec_depend>
+  <exec_depend>kortex_description</exec_depend>
+
+  <!-- Fake-hardware stack: launch/fake_hardware.launch.py and gui.py's
+       "Fake hardware" checkbox spawn these directly. -->
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+
+  <!-- Not rosdep-resolvable: the Kinova kortex_api Python SDK is a
+       vendor-distributed wheel, installed separately -->
+
   <!-- Test-time linters -->
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

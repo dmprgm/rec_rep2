@@ -1,0 +1,21 @@
+# vcstool workspace file for rec_rep2's external driver stack.
+#
+# kortex_bringup / kortex_description (from Kinovarobotics/ros2_kortex) are
+# released as Jazzy binaries (ros-jazzy-kortex-bringup, etc.), so the default
+# install path is just:
+#
+#   rosdep install --from-paths src --ignore-src -r -y
+#
+# This file exists for the case where you want to build ros2_kortex from
+# source instead -- to pick up a fix not yet released, or to pin an exact
+# commit for reproducibility. Import with:
+#
+#   vcs import src < rec_rep2.repos
+#
+# The "main" branch is the one Kinovarobotics tracks against ROS2 Jazzy
+# Todo: pin to a specific commit SHA after identifying
+repositories:
+  ros2_kortex:
+    type: git
+    url: https://github.com/Kinovarobotics/ros2_kortex.git
+    version: main

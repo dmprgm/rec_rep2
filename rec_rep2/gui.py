@@ -13,9 +13,9 @@ import rclpy
 from rclpy.node import Node
 from std_srvs.srv import SetBool, Trigger
 
+from .paths import BAGS_DIR, ROS_SETUP, WS_OVERLAY
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
-BAGS_DIR    = os.path.expanduser('~/ros2_ws/src/rec_rep2/bags')
-WS_OVERLAY  = os.path.expanduser('~/ros2_ws/install/setup.bash')
 SCRIPTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ── Theme ─────────────────────────────────────────────────────────────────────
@@ -38,10 +38,21 @@ SEMANTIC = {
 }
 
 # ── Fake-hardware paths ───────────────────────────────────────────────────────
-XACRO_PATH = '/opt/ros/humble/share/kortex_description/robots/gen3.xacro'
 XACRO_ARGS = 'robot_ip:=0.0.0.0 name:=arm arm:=gen3 dof:=7 use_fake_hardware:=true'
 URDF_TMP   = '/tmp/rec_rep2_gen3.urdf'
-RVIZ_CFG   = '/opt/ros/humble/share/kortex_description/rviz/view_robot.rviz'
+
+
+def _kortex_description_paths():
+    """
+    Resolve gen3.xacro / view_robot.rviz from the installed kortex_description
+    share directory
+    """
+    from ament_index_python.packages import get_package_share_directory
+    share = get_package_share_directory('kortex_description')
+    return (
+        os.path.join(share, 'robots', 'gen3.xacro'),
+        os.path.join(share, 'rviz', 'view_robot.rviz'),
+    )
 
 
 # ── ROS2 node ─────────────────────────────────────────────────────────────────
@@ -138,7 +149,7 @@ class App(tk.Tk):
     # ── Process helpers ───────────────────────────────────────────────────────
 
     def _ros_cmd(self, parts):
-        chain = ['source /opt/ros/humble/setup.bash',
+        chain = [f'source {ROS_SETUP}',
                  f'source {WS_OVERLAY}'] + parts
         return ['bash', '-c', ' && '.join(chain)]
 
@@ -444,6 +455,15 @@ class App(tk.Tk):
             self._log('Recorder already running.', 'warning'); return
         self._fake_mode = self._fake_var.get()
         ip = self._ip_var.get().strip() or '192.168.0.10'
+
+        xacro_path = rviz_cfg = None
+        if self._fake_mode:
+            try:
+                xacro_path, rviz_cfg = _kortex_description_paths()
+            except Exception as exc:
+                self._log(f'Cannot locate kortex_description package: {exc}', 'danger')
+                return
+
         if self._fake_mode:
             self._spawn('recorder',
                         [f'FAKE_HARDWARE=1 ROBOT_IP={ip} ros2 run rec_rep2 recorder'],
@@ -454,11 +474,11 @@ class App(tk.Tk):
                         'success')
         if self._fake_mode:
             self._spawn('rsp', [
-                f'xacro {XACRO_PATH} {XACRO_ARGS} > {URDF_TMP}',
+                f'xacro {xacro_path} {XACRO_ARGS} > {URDF_TMP}',
                 f'ros2 run robot_state_publisher robot_state_publisher '
                 f'--ros-args -p "robot_description:=$(cat {URDF_TMP})"',
             ], 'warning')
-            self._spawn('rviz', [f'ros2 run rviz2 rviz2 -d {RVIZ_CFG}'], 'warning')
+            self._spawn('rviz', [f'ros2 run rviz2 rviz2 -d {rviz_cfg}'], 'warning')
             self._launch_joint_sliders()
 
     def _launch_joint_sliders(self):
@@ -484,7 +504,7 @@ class App(tk.Tk):
         launcher = os.path.join(script_dir, 'launch_gui.sh')
         with open(launcher, 'w') as f:
             f.write('#!/bin/bash\n'
-                    'source /opt/ros/humble/setup.bash\n'
+                    f'source {ROS_SETUP}\n'
                     f'source {WS_OVERLAY}\n'
                     'exec ros2 run rec_rep2 gui\n')
         os.chmod(launcher, 0o755)
@@ -553,7 +573,7 @@ class App(tk.Tk):
             self._kill('jsb')
             self._log('Joint sliders paused for replay.', 'warning')
             cmd = self._ros_cmd([
-                f'FAKE_HARDWARE=1 ros2 run rec_rep2 fake_replayer {path} {speed:.2f} --storage sqlite3'])
+                f'FAKE_HARDWARE=1 ros2 run rec_rep2 fake_replayer {path} {speed:.2f}'])
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, preexec_fn=os.setsid)
             def _monitor():
@@ -563,7 +583,7 @@ class App(tk.Tk):
             threading.Thread(target=_monitor, daemon=True).start()
         else:
             cmd = self._ros_cmd([
-                f'ros2 run rec_rep2 replayer {path} {speed:.2f} --storage sqlite3'])
+                f'ros2 run rec_rep2 replayer {path} {speed:.2f}'])
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
             threading.Thread(target=self._tail, args=(proc, 'replayer'),

@@ -15,7 +15,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from classic_bags import Bag
+from .trajectory_io import load_waypoints
 
 
 class FakeReplayer(Node):
@@ -30,13 +30,7 @@ class FakeReplayer(Node):
         filepath : path to bag directory from recorder
         speed    : 1.0 = real-time, 2.0 = double speed, etc.
         """
-        waypoints = []
-        t0_ns = None
-        with Bag(filepath) as bag:
-            for _, msg, ts in bag.read_messages('/joint_states'):
-                if t0_ns is None:
-                    t0_ns = int(ts)
-                waypoints.append(((int(ts) - t0_ns) / 1e9, msg))
+        waypoints = load_waypoints(filepath)
 
         if not waypoints:
             self.get_logger().error('Empty bag. There is nothing to replay!')

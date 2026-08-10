@@ -6,9 +6,10 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import JointState
 from std_srvs.srv import SetBool, Trigger
-from classic_bags import Bag
 from .compliant_mode import CompliantModeManager
 from .compliant_torque_mode import CompliantTorqueMode
+from .paths import BAGS_DIR
+from .trajectory_io import save_waypoints
 
 class MotionRecorder(Node):
     """
@@ -28,9 +29,11 @@ class MotionRecorder(Node):
         self.trajectory     = []   # list of (t_ns: int, JointState msg)
         self.t0             = None
         self._last_js_stamp = None  # updated every /joint_states message
+        self._state_lock    = threading.Lock()  # guards recording/t0/trajectory
 
         # Declare parameters consumed by CompliantTorqueMode.
         # All have safe defaults; override via a --params-file yaml.
+        self.declare_parameter('save_directory', BAGS_DIR)
         self.declare_parameter('robot_description', '')
         self.declare_parameter('compliant_control_rate_hz', 200)
         self.declare_parameter('compliant_observer_L',
@@ -89,10 +92,11 @@ class MotionRecorder(Node):
     def _joint_cb(self, msg: JointState):
         """Buffer one waypoint per received JointState message."""
         self._last_js_stamp = time.time()
-        if not self.recording:
-            return
-        t_ns = int((time.time() - self.t0) * 1e9)
-        self.trajectory.append((t_ns, msg))
+        with self._state_lock:
+            if not self.recording:
+                return
+            t_ns = int((time.time() - self.t0) * 1e9)
+            self.trajectory.append((t_ns, msg))
 
     def _load_compliant_params(self):
         """Build the params dict consumed by CompliantTorqueMode."""
@@ -175,9 +179,10 @@ class MotionRecorder(Node):
         else:
             self.mode_mgr.enable()    # arm becomes compliant here
 
-        self.trajectory.clear()
-        self.t0 = time.time()
-        self.recording = True
+        with self._state_lock:
+            self.trajectory.clear()
+            self.t0 = time.time()
+            self.recording = True
         resp.success = True
         resp.message = (
             f'Recording started ({self._posing_mode} mode). '
@@ -186,21 +191,22 @@ class MotionRecorder(Node):
         return resp
 
     def _stop_cb(self, req, resp):
-        self.recording = False
+        with self._state_lock:
+            self.recording = False
+            trajectory = list(self.trajectory)
+
         if self._posing_mode == 'compliant_torque':
             self.torque_mode.exit()   # safe shutdown: position hold first
         else:
             self.mode_mgr.disable()   # back to position control
 
-        save_dir = '/home/horrorfry/ros2_ws/src/rec_rep2/bags'
+        save_dir = os.path.expanduser(self.get_parameter('save_directory').value)
         os.makedirs(save_dir, exist_ok=True)
 
         fname = os.path.join(save_dir, f'recorded_motion_{int(time.time())}.bag')
-        with Bag(fname, 'w') as bag:
-            for t_ns, msg in self.trajectory:
-                bag.write('/joint_states', msg, t_ns)
+        save_waypoints(fname, trajectory)
 
-        n = len(self.trajectory)
+        n = len(trajectory)
         resp.success = True
         resp.message = f'Saved {n} waypoints to {fname}'
         self.get_logger().info(resp.message)

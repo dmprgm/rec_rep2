@@ -11,6 +11,8 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 import os
 
+from rec_rep2.paths import BAGS_DIR
+
 def generate_launch_description():
 
     # --- Declare arguments users can override on the CLI ---
@@ -23,6 +25,11 @@ def generate_launch_description():
         'use_fake_hardware',
         default_value='false',
         description='Use mock hardware for testing without robot',
+    )
+    save_directory_arg = DeclareLaunchArgument(
+        'save_directory',
+        default_value=BAGS_DIR,
+        description='Directory recorded trajectory bags are saved to',
     )
 
     # --- Include the kortex_bringup launch file, launch file inception ---
@@ -45,15 +52,15 @@ def generate_launch_description():
         executable='recorder',
         name='motion_recorder',
         output='screen',
-        # Parameters can be passed here or from a YAML file
         parameters=[{
-            'save_directory': '/tmp',
+            'save_directory': LaunchConfiguration('save_directory'),
         }],
     )
 
     return LaunchDescription([
         robot_ip_arg,
         use_fake_arg,
+        save_directory_arg,
         driver_launch,
         recorder_node,
     ])
