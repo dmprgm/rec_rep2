@@ -1,0 +1,58 @@
+# cpp_servo_params.yaml
+#
+# Parameters for compliant_torque_node (rec_rep2_servo). Same control-law
+# and safety semantics as rec_rep2's config/compliant_params.yaml! See
+# THATthat file for the tuning guide, this one just drops the "compliant_"
+# name prefix (this node has its own ROS namespace already) + adds the
+# Kortex connection settings the Python node reads from kortex_connection.py
+# instead of ROS parameters.
+#
+# IMPORTANT! keep the numeric values here in sync with
+# rec_rep2/config/compliant_params.yaml by hand. See docs/cpp_servoing.md's
+# "known gaps" section. There is currently no single source of truth shared
+# between the two nodes. ULP!
+#
+# Pass with:
+#   ros2 run rec_rep2_servo compliant_torque_node --ros-args --params-file <path>/cpp_servo_params.yaml
+
+compliant_torque_servo:
+  ros__parameters:
+
+    # ── Kortex connection ────────────────────────────────────────────────
+    robot_ip: "192.168.1.10"
+    tcp_port: 10000
+    udp_port: 10001
+    username: "admin"
+    password: "admin"
+
+    # ── URDF ──────────────────────────────────────────────────────────────
+    # Only a file path is supported here (unlike the Python node's
+    # robot_description-parameter / xacro-subprocess fallbacks) -- see
+    # docs/cpp_servoing.md. Generate one with:
+    #   ros2 run xacro xacro <kortex_description share>/robots/gen3.xacro \
+    #     dof:=7 vision:=false -o gen3.urdf
+    urdf_path: ""
+
+    # ── Control loop rate ─────────────────────────────────────────────────
+    control_rate_hz: 200.0
+
+    # ── Observer gains (rad/s, per joint) ───────────────────────────────────
+    observer_L: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+    observer_Lp: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    # ── Viscous damping (Nm*s/rad, per joint) ───────────────────────────────
+    damping_b: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+
+    # ── Safety: torque saturation (Nm, per joint, absolute value) ──────────
+    torque_limits: [22.4, 22.4, 22.4, 11.2, 11.2, 11.2, 11.2]
+
+    # ── Safety: velocity watchdog (rad/s, per joint) ────────────────────────
+    velocity_limits_rad_s: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+
+    # ── Safety: loop-rate watchdog ───────────────────────────────────────────
+    max_missed_cycles: 10
+
+    # ── Gravity-compensation sign correction (+-1.0, per joint) ─────────────
+    # Verification procedure (same as prior): Enter torque mode with L=0, Lp=0, b=0 
+    # and confirm each joint holds position; flip sign for any joint that drifts!
+    gravity_sign: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]

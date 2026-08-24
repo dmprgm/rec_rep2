@@ -1,0 +1,4 @@
+---
+bool running
+bool faulted
+string fault_message

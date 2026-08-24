@@ -51,6 +51,12 @@ class MotionRecorder(Node):
                                [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         self.declare_parameter('compliant_urdf_path', '')
 
+        # C++ servo backend selection -- see docs/cpp_servoing.md. Default
+        # False keeps the in-process Python CompliantTorqueMode as-is;
+        # rec_rep2_servo need not even be built unless this is set true.
+        self.declare_parameter('use_cpp_servo_backend', False)
+        self.declare_parameter('cpp_servo_node_name', 'compliant_torque_servo')
+
         # Subscribe to joint states published by the driver
         self.sub = self.create_subscription(
             JointState,
@@ -86,7 +92,14 @@ class MotionRecorder(Node):
         self._bias_zeroed = False          # reset each node restart
 
         self.mode_mgr = CompliantModeManager()
-        self.torque_mode = CompliantTorqueMode(self, self._load_compliant_params())
+        if self.get_parameter('use_cpp_servo_backend').value:
+            # Deferred import: rec_rep2_servo need not be built at all
+            # unless this backend is actually selected.
+            from .cpp_servo_backend import CppServoBackend
+            self.torque_mode = CppServoBackend(
+                self, self.get_parameter('cpp_servo_node_name').value)
+        else:
+            self.torque_mode = CompliantTorqueMode(self, self._load_compliant_params())
         self.get_logger().info('Motion Recorder ready.')
 
     def _joint_cb(self, msg: JointState):

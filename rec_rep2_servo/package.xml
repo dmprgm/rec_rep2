@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rec_rep2_servo</name>
+  <version>0.1.0</version>
+  <description>
+    C++ low-level (LOW_LEVEL_SERVOING/TORQUE) control loop for the Kinova
+    Gen3, as an optional real-time backend for rec_rep2's compliant torque
+    posing mode. See docs/cpp_servoing.md in the rec_rep2 package.
+  </description>
+  <maintainer email="pearlda@oregonstate.edu">Damien Pearl</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_srvs</depend>
+  <depend>ament_index_cpp</depend>
+
+  <!-- Pinocchio C++ core; released for Jazzy as ros-jazzy-pinocchio, same
+       package rec_rep2 already depends on for its Python bindings. -->
+  <depend>pinocchio</depend>
+
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <!-- NOT rosdep-resolvable: the Kinova Kortex C++ SDK is a vendor-distributed
+       archive, not on rosdep/apt. See docs/cpp_servoing.md for where to get
+       it and how to point CMake at it (KORTEX_API_DIR). Without it, this
+       package still builds its portable core library and unit tests; only
+       the compliant_torque_node executable is skipped. -->
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

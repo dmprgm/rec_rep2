@@ -1,5 +1,5 @@
 """
-fake_hardware.launch.py — full system test without a physical robot.
+fake_hardware.launch.py
 
 Starts:
   - robot_state_publisher     (Gen3 7-DoF URDF, fake hardware variant)

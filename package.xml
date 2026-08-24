@@ -22,8 +22,9 @@
   <!-- Trigger service for start/stop recording -->
   <depend>std_srvs</depend>
 
-  <!-- ROS bag reading/writing for recorded trajectories -->
-  <depend>rosbag2_py</depend>
+  <!-- ROS bag reading/writing for recorded trajectories, ROS1-style API.
+       See docs/bag_migration.md. -->
+  <depend>classic_bags</depend>
   
   <!-- FollowJointTrajectory action for replay -->
   <depend>control_msgs</depend>
@@ -54,6 +55,11 @@
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <exec_depend>joint_state_publisher_gui</exec_depend>
+
+  <!-- C++ low-level servoing backend: only required at runtime if the
+       use_cpp_servo_backend parameter is set true. See
+       docs/cpp_servoing.md. -->
+  <exec_depend>rec_rep2_servo</exec_depend>
 
   <!-- Not rosdep-resolvable: the Kinova kortex_api Python SDK is a
        vendor-distributed wheel, installed separately -->

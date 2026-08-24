@@ -1,6 +1,10 @@
 # RecRep2: Compliant Motion Recording and Replay for a Kinova Gen3 Robotic Arm
 This was made for the Humble ROS2 distro and now must be converted to the Jazzy ROS2 distro.
 
+See also: [docs/bag_migration.md](docs/bag_migration.md) (rosbag2_py →
+classic_bags) and [docs/cpp_servoing.md](docs/cpp_servoing.md) (optional
+C++ low-level servoing backend, `rec_rep2_servo`).
+
 ## External driver stack
 rec_rep2 itself only talks to the Gen3 through `/joint_states` and
 `joint_trajectory_controller`. To get a (real or fake) robot onto those
